@@ -1,0 +1,10 @@
+{
+  "name": "digital-wardrobe-site",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static site generated from Notion export",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
+

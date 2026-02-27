@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电子衣橱</title>
+  <link rel="stylesheet" href="./src/styles.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+</head>
+<body>
+  <header class="app-header">
+    <nav class="nav">
+      <h1 style="cursor:pointer" onclick="location.reload()">电子衣橱</h1>
+      <button class="nav-btn active" data-view="home">首页</button>
+      <button class="nav-btn" data-view="inventory">衣柜区域</button>
+      <button class="nav-btn" data-view="storage">收纳区域</button>
+      <button class="nav-btn" data-view="discard">预淘汰区</button>
+      <button class="nav-btn" data-view="purchases">历史购买</button>
+      <span class="spacer"></span>
+      <input id="global-search" class="search" type="search" placeholder="搜索名称/品牌/状态…">
+    </nav>
+  </header>
+
+  <main id="app" class="app-main">
+    <div id="loading" class="loading">正在加载…</div>
+    <section id="content" class="content" hidden></section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">编辑项目</h3>
+        <button id="modal-close" class="close-btn">&times;</button>
+      </div>
+      <div id="modal-body" class="modal-body">
+        <form id="edit-form"></form>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="nav-btn">取消</button>
+        <button id="modal-save" class="nav-btn active">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <small>由 Notion 导出构建 · 本地数据仅保存在此文件夹</small>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="./src/app.js" type="module"></script>
+</body>
+</html>
+
