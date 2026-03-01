@@ -5,6 +5,17 @@ const path = require('path');
 const port = process.env.PORT || 5173;
 const root = __dirname;
 
+// Helper function to escape CSV fields
+function escapeCsvField(field) {
+  if (field === null || field === undefined) return '';
+  const str = String(field);
+  // If field contains comma, quote, or newline, wrap in quotes and escape inner quotes
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
 const mime = {
   '.html':'text/html; charset=utf-8',
   '.js':'text/javascript; charset=utf-8',
@@ -133,6 +144,64 @@ const server = http.createServer((req, res) => {
         }
 
         fs.writeFileSync(safePath, content, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500); res.end(e.message);
+      }
+    });
+    return;
+  }
+
+  // Handle API Save Row to CSV (POST /api/save/:filename)
+  if (req.method === 'POST' && urlPath.startsWith('/api/save/')) {
+    const filename = urlPath.replace('/api/save/', '');
+    if (!filename.endsWith('.csv')) {
+      res.writeHead(400); res.end('Only CSV files supported'); return;
+    }
+    
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const rowData = JSON.parse(body);
+        
+        // Ensure saving is restricted to the data directory
+        const safePath = path.resolve(root, 'data', filename);
+        if (!safePath.startsWith(path.resolve(root, 'data'))) {
+          res.writeHead(403); res.end('Forbidden'); return;
+        }
+
+        // Read existing CSV to get headers
+        let headers = [];
+        let existingContent = '';
+        
+        if (fs.existsSync(safePath)) {
+          existingContent = fs.readFileSync(safePath, 'utf8');
+          const lines = existingContent.trim().split('\n');
+          if (lines.length > 0) {
+            headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+          }
+        }
+
+        // If file is empty or doesn't exist, create with default headers
+        if (headers.length === 0) {
+          headers = Object.keys(rowData);
+          const headerLine = headers.map(h => escapeCsvField(h)).join(',');
+          fs.writeFileSync(safePath, headerLine + '\n', 'utf8');
+        }
+
+        // Create CSV row matching headers
+        const rowValues = headers.map(key => {
+          const value = rowData[key] || '';
+          return escapeCsvField(value);
+        });
+        
+        const rowLine = rowValues.join(',') + '\n';
+        
+        // Append to file
+        fs.appendFileSync(safePath, rowLine, 'utf8');
+        
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
       } catch (e) {
