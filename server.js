@@ -4,7 +4,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const pool = require('./db');
 
-const port = process.env.PORT || 5173;
+const port = process.env.PORT || 8080;
 const root = __dirname;
 
 const mime = {
