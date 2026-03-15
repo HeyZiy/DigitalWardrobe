@@ -1,4 +1,4 @@
-FROM node:20-bookworm
+FROM node:20-slim
 
 # Install Puppeteer dependencies
 RUN apt-get update && apt-get install -y \
@@ -41,9 +41,6 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     xvfb \
     chromium \
-    python3 \
-    make \
-    g++ \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -53,8 +50,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies and rebuild sqlite3
-RUN npm install && npm rebuild sqlite3
+# Install dependencies
+RUN npm install
 
 # Copy project files
 COPY . .
