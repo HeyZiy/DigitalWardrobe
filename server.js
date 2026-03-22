@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const pool = require('./db');
+const tesseract = require('tesseract.js');
+const sharp = require('sharp');
 
 const port = process.env.PORT || 8080;
 const root = __dirname;
@@ -326,6 +328,113 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ success: true, changes: result.rowCount }));
     });
     return;
+  }
+
+  // 9. Recognize Image
+  if (req.method === 'POST' && urlPath === '/api/recognize-image') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        const { image } = JSON.parse(body);
+        if (!image) {
+          res.writeHead(400); res.end('Image required'); return;
+        }
+
+        // Extract base64 image data
+        const base64Data = image.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        // Preprocess image for better OCR results
+        const processedBuffer = await sharp(buffer)
+          .resize({ width: 1200 })
+          .grayscale()
+          .threshold(128)
+          .toBuffer();
+
+        // Perform OCR with timeout control
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('OCR处理超时')), 30000)
+        );
+        const ocrPromise = tesseract.recognize(processedBuffer, 'chi_sim+eng', {
+          logger: info => console.log(info),
+        });
+        const { data: { text } } = await Promise.race([ocrPromise, timeoutPromise]);
+
+        console.log('OCR Result:', text);
+
+        // Extract product information from OCR text
+        const extractedInfo = extractProductInfo(text);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          success: true, 
+          ...extractedInfo 
+        }));
+      } catch (e) {
+        console.error('Recognition error:', e);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Helper function to extract product information from text
+  function extractProductInfo(text) {
+    const info = {
+      name: '',
+      price: '',
+      brand: '',
+      category: '',
+      source: ''
+    };
+
+    // Extract price
+    const priceMatch = text.match(/[¥￥]\s?(\d+(?:\.\d{2})?)/);
+    if (priceMatch) {
+      info.price = priceMatch[1];
+    }
+
+    // Extract brand (simple heuristic)
+    const brands = ['优衣库', 'UNIQLO', 'ZARA', 'H&M', '耐克', 'NIKE', '阿迪达斯', 'ADIDAS', '李宁', '安踏'];
+    for (const brand of brands) {
+      if (text.includes(brand)) {
+        info.brand = brand;
+        break;
+      }
+    }
+
+    // Extract category (simple heuristic)
+    const categories = ['T恤', '短袖', '长袖', '外套', '裤子', '牛仔裤', '裙子', '衬衫', '卫衣', '夹克'];
+    for (const category of categories) {
+      if (text.includes(category)) {
+        info.category = category;
+        break;
+      }
+    }
+
+    // Extract source (simple heuristic)
+    const sources = ['淘宝', '天猫', '京东', '拼多多', '苏宁', '唯品会'];
+    for (const source of sources) {
+      if (text.includes(source)) {
+        info.source = source;
+        break;
+      }
+    }
+
+    // Extract name (first few lines that don't contain price or other keywords)
+    const lines = text.split('\n').filter(line => line.trim());
+    const nameLines = [];
+    for (const line of lines) {
+      if (!line.includes('¥') && !line.includes('￥') && !line.includes('价格') && !line.includes('品牌') && !line.includes('分类')) {
+        nameLines.push(line.trim());
+        if (nameLines.length >= 2) break;
+      }
+    }
+    info.name = nameLines.join(' ');
+
+    return info;
   }
 
   // Static file serving

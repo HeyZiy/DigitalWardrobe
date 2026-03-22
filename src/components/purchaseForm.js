@@ -103,6 +103,7 @@ function generatePurchaseForm() {
           <img id="preview-img" style="max-width:100%;max-height:200px;border-radius:8px">
           <div style="margin-top:8px">
             <button type="button" id="remove-img" style="background:none;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">移除图片</button>
+            <button type="button" id="recognize-img" style="background:var(--brand);border:1px solid var(--brand);color:white;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;margin-left:8px">识别商品信息</button>
           </div>
         </div>
         <input type="file" id="img-input" accept="image/*" style="display:none">
@@ -257,6 +258,47 @@ function setupFormEvents() {
       if (placeholder) placeholder.style.display = 'block';
       if (preview) preview.style.display = 'none';
       if (imgInput) imgInput.value = '';
+    });
+  }
+  
+  const recognizeBtn = $('#recognize-img');
+  if (recognizeBtn) {
+    recognizeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!uploadedImageData) {
+        alert('请先上传图片');
+        return;
+      }
+      
+      recognizeBtn.textContent = '识别中...';
+      recognizeBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/recognize-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: uploadedImageData })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          if (data.name) $('input[name="名称"]').value = data.name;
+          if (data.price) $('input[name="价格"]').value = data.price;
+          if (data.brand) $('input[name="品牌"]').value = data.brand;
+          if (data.category) $('input[name="分类"]').value = data.category;
+          if (data.source) $('input[name="购买途径"]').value = data.source;
+          
+          alert('商品信息识别成功！');
+        } else {
+          alert('识别失败：' + (data.error || '请尝试上传更清晰的图片'));
+        }
+      } catch (err) {
+        console.error('识别错误:', err);
+        alert('识别失败：网络错误');
+      } finally {
+        recognizeBtn.textContent = '识别商品信息';
+        recognizeBtn.disabled = false;
+      }
     });
   }
 }

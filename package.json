@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "pg": "^8.14.1",
-    "puppeteer": "^24.39.1"
+    "puppeteer": "^24.39.1",
+    "tesseract.js": "^5.1.0",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "sqlite3": "^6.0.1"
