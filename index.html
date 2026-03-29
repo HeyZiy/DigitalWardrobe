@@ -9,45 +9,68 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 </head>
 <body>
-  <header class="app-header">
-    <div class="nav-container">
-      <h1 style="cursor:pointer; margin:0; font-size:20px; white-space:nowrap" onclick="location.reload()">电子衣橱</h1>
-      <nav class="nav">
-        <button class="nav-btn active" data-view="dashboard">📊 概览</button>
-        <button class="nav-btn" data-view="wardrobe">🧥 衣柜管理</button>
-        <button class="nav-btn" data-view="finance">💰 财务管理</button>
-        <span class="spacer"></span>
-        <button id="global-fast-import-btn" class="nav-btn" style="background:var(--brand);color:white;border-color:var(--brand);margin-right:12px;font-weight:bold;">📸 极速导入</button>
-        <input id="global-search" class="search" type="search" placeholder="搜索名称/品牌…">
-      </nav>
+  <div id="app-container">
+    <header class="app-header">
+      <div class="nav-container">
+        <h1 style="cursor:pointer; margin:0; font-size:20px; white-space:nowrap" onclick="location.reload()">电子衣橱</h1>
+        <nav class="nav">
+          <button class="nav-btn active" data-view="dashboard">📊 概览</button>
+          <button class="nav-btn" data-view="wardrobe">🧥 衣柜管理</button>
+          <button class="nav-btn" data-view="finance">💰 财务管理</button>
+          <span class="spacer"></span>
+          <button id="global-fast-import-btn" class="nav-btn" style="background:var(--brand);color:white;border-color:var(--brand);margin-right:12px;font-weight:bold;">📸 极速导入</button>
+          <input id="global-search" class="search" type="search" placeholder="搜索名称/品牌…">
+        </nav>
+      </div>
+    </header>
+
+    <main id="app" class="app-main">
+      <div id="loading" class="loading">正在加载…</div>
+      <section id="content" class="content" hidden></section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-title">编辑项目</h3>
+          <button id="modal-close" class="close-btn">&times;</button>
+        </div>
+        <div id="modal-body" class="modal-body">
+          <form id="edit-form"></form>
+        </div>
+        <div class="modal-footer">
+          <button id="modal-cancel" class="nav-btn">取消</button>
+          <button id="modal-save" class="nav-btn active">保存</button>
+        </div>
+      </div>
     </div>
-  </header>
 
-  <main id="app" class="app-main">
-    <div id="loading" class="loading">正在加载…</div>
-    <section id="content" class="content" hidden></section>
-  </main>
+    <footer class="app-footer">
+      <small>电子衣橱 · 本地数据管理</small>
+    </footer>
+  </div>
 
-  <!-- Modal -->
-  <div id="modal-overlay" class="modal-overlay" hidden>
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-title">编辑项目</h3>
-        <button id="modal-close" class="close-btn">&times;</button>
+  <!-- Login Overlay -->
+  <div id="login-overlay" class="login-overlay" hidden>
+    <div class="login-card">
+      <div class="login-header">
+        <div class="wardrobe-icon">🧥</div>
+        <h2>隐私库访问</h2>
+        <p>请输入访问密码以解锁您的电子衣橱</p>
       </div>
-      <div id="modal-body" class="modal-body">
-        <form id="edit-form"></form>
-      </div>
-      <div class="modal-footer">
-        <button id="modal-cancel" class="nav-btn">取消</button>
-        <button id="modal-save" class="nav-btn active">保存</button>
+      <form id="login-form">
+        <div class="form-group">
+          <input type="password" id="login-password" placeholder="输入密码..." required autofocus>
+          <div id="login-error" class="error-msg"></div>
+        </div>
+        <button type="submit" class="login-btn">进入衣橱</button>
+      </form>
+      <div class="login-footer">
+        <small>© 2026 Digital Wardrobe · Railway Secure Mode</small>
       </div>
     </div>
   </div>
-
-  <footer class="app-footer">
-    <small>电子衣橱 · 本地数据管理</small>
-  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

@@ -4,6 +4,9 @@ import { renderFinanceView } from './views/finance.js';
 import { renderWardrobeView } from './views/wardrobe.js';
 import { renderDashboardView } from './views/dashboard.js';
 import { showModal, hideModal } from './components/modal.js';
+import { auth } from './auth.js';
+
+auth.init();
 
 const contentEl = $('#content');
 const loadingEl = $('#loading');

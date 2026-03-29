@@ -7,6 +7,18 @@ const pool = require('./db');
 const { GoogleGenAI } = require('@google/genai');
 const port = process.env.PORT || 8080;
 const root = __dirname;
+const WARDROBE_PASSWORD = process.env.WARDROBE_PASSWORD;
+
+/**
+ * Basic session verify (Single Password)
+ */
+function isAuthorized(req) {
+  if (!WARDROBE_PASSWORD) return true; // Auth disabled if no password set
+  const cookies = req.headers.cookie || '';
+  const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth_token='));
+  const token = authCookie ? authCookie.split('=')[1].trim() : req.headers['x-auth-token'];
+  return token === WARDROBE_PASSWORD;
+}
 
 const mime = {
   '.html':'text/html; charset=utf-8',
@@ -27,6 +39,43 @@ const server = http.createServer((req, res) => {
   let urlPath = decodeURI(url.pathname);
   if (urlPath === '/' || urlPath === '') urlPath = '/index.html';
   const filePath = path.join(root, urlPath);
+
+  // 0. Auth Endpoint (POST /api/auth/login)
+  if (req.method === 'POST' && urlPath === '/api/auth/login') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { password } = JSON.parse(body);
+        if (password === WARDROBE_PASSWORD) {
+          res.writeHead(200, { 
+            'Content-Type': 'application/json',
+            'Set-Cookie': `auth_token=${password}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000` // 30 days
+          });
+          res.end(JSON.stringify({ success: true, token: password }));
+        } else {
+          res.writeHead(401);
+          res.end(JSON.stringify({ success: false, error: '密码错误' }));
+        }
+      } catch (e) {
+        res.writeHead(400); res.end('Invalid request');
+      }
+    });
+    return;
+  }
+
+  // 1. Auth Check for all other requests
+  if (!isAuthorized(req)) {
+    // Only allow essential assets for the login page
+    const publicAssets = ['/styles.css', '/src/styles.css', '/favicon.ico'];
+    if (req.method === 'GET' && (urlPath === '/index.html' || publicAssets.includes(urlPath))) {
+      // Allow index.html but the frontend will show the login overlay
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Unauthorized' }));
+      return;
+    }
+  }
 
   // Handle API Fetch Metadata (POST /api/fetch-metadata)
   if (req.method === 'POST' && urlPath === '/api/fetch-metadata') {
