@@ -163,7 +163,7 @@ function renderRowActions(fileType) {
     actions.push(`<button class="move-btn inventory" data-action="move" data-target="inventory">恢复</button>`);
     actions.push(`<button class="move-btn delete" data-action="delete">删除</button>`);
   } else if (fileType === 'purchases') {
-    actions.push(`<button class="edit-btn" data-action="edit">编辑</button>`);
+    actions.push(`<button class="move-btn delete" data-action="delete">删除</button>`);
   }
   
   actions.push(`<button class="edit-btn" data-action="edit">编辑</button>`);
@@ -221,44 +221,44 @@ export function setupTableEvents(container, fileType, rows, title, filterFn, sho
     console.log(`Action: ${action} on row ${rowIdx}`, rowData);
     
     if (action === 'edit') {
-      // Import and show appropriate form
+      const { showModal } = await import('./modal.js');
+      
+      let editData = rowData;
+      // If the row comes from the finance mapped view, translate it back to the English schema
       if (fileType === 'purchases') {
-        const { showPurchaseForm } = await import('./purchaseForm.js');
-        showPurchaseForm(async (updatedData) => {
-          try {
-            const res = await fetch(`/api/purchases/${rowData.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(updatedData)
-            });
-            if (res.ok) {
-              alert('编辑成功，请刷新页面查看！');
-            } else {
-              alert('编辑失败');
-            }
-          } catch(e) {
-            alert('保存失败：' + e.message);
-          }
-        }, rowData); // Pass rowData to populate form
-      } else {
-        const { showModal } = await import('./modal.js');
-        showModal('编辑项目', rowData, async (updatedData) => {
-          try {
-            const res = await fetch(`/api/items/${rowData.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(updatedData)
-            });
-            if (res.ok) {
-              alert('编辑成功，请刷新(切换标签)查看！');
-            } else {
-              alert('编辑失败');
-            }
-          } catch(e) {
-            alert('保存失败：' + e.message);
-          }
-        });
+         editData = {
+           id: rowData.id,
+           image: rowData['图片'] || '',
+           name: rowData['名称'] || '',
+           brand: rowData['品牌'] || '',
+           category: rowData['分类'] || '',
+           buy_date: rowData['购买日期'] || '',
+           source: rowData['购买途径'] || '',
+           price: rowData['价格'] || '',
+           status: rowData['状态'] || '',
+           url: rowData['购买链接'] || '',
+           season: rowData['备注'] || '',
+           location: (rowData['当前下落'] === '正在使用' ? 'inventory' : (rowData['当前下落'] === '已收纳' ? 'storage' : (rowData['当前下落'] === '已淘汰' ? 'discard' : 'inventory')))
+         };
       }
+      
+      showModal('编辑物品属性', editData, async (updatedData) => {
+        try {
+          const res = await fetch(`/api/items/${rowData.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+          });
+          if (res.ok) {
+            alert('编辑成功！');
+            window.dispatchEvent(new Event('data-refreshed'));
+          } else {
+            alert('编辑失败，请重试');
+          }
+        } catch(e) {
+          alert('保存失败：' + e.message);
+        }
+      });
     } else if (action === 'move') {
       const target = btn.dataset.target;
       if (confirm(`确定要将该物品移动到 ${target} 吗？`)) {
@@ -275,10 +275,13 @@ export function setupTableEvents(container, fileType, rows, title, filterFn, sho
       }
     } else if (action === 'delete') {
       if (confirm('确定要删除这项吗？')) {
-        const endpoint = fileType === 'purchases' ? `/api/purchases/${rowData.id}` : `/api/items/${rowData.id}`;
+        const endpoint = `/api/items/${rowData.id}`;
         try {
           const res = await fetch(endpoint, { method: 'DELETE' });
-          if (res.ok) alert('删除成功，请刷新页面！');
+          if (res.ok) {
+            alert('删除成功！');
+            window.dispatchEvent(new Event('data-refreshed'));
+          }
         } catch(e) {
           alert('删除失败：' + e.message);
         }
@@ -308,7 +311,7 @@ export function setupTableEvents(container, fileType, rows, title, filterFn, sho
         let failCount = 0;
         for (const row of selectedRows) {
           try {
-            const endpoint = fileType === 'purchases' ? `/api/purchases/${row.id}` : `/api/items/${row.id}`;
+            const endpoint = `/api/items/${row.id}`;
             const res = await fetch(endpoint, { method: 'DELETE' });
             if (res.ok) {
               successCount++;
@@ -326,12 +329,7 @@ export function setupTableEvents(container, fileType, rows, title, filterFn, sho
         }
       }
     } else if (action === 'move') {
-      // Show move target selection
-      const targets = fileType === 'purchases' ? [] : ['inventory', 'storage', 'discard'];
-      if (targets.length === 0) {
-        alert('购买记录不支持移动操作');
-        return;
-      }
+      const targets = ['inventory', 'storage', 'discard'];
       const targetLabels = { inventory: '正在使用', storage: '已收纳', discard: '已淘汰' };
       const target = prompt(`选择目标位置：\n${targets.map(t => `${t} - ${targetLabels[t]}`).join('\n')}`);
       if (target && targets.includes(target)) {

@@ -238,98 +238,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 5. Get Purchases
-  if (req.method === 'GET' && urlPath === '/api/purchases') {
-    pool.query('SELECT * FROM purchases ORDER BY id DESC', (err, result) => {
-      if (err) {
-        res.writeHead(500); res.end(err.message); return;
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(result.rows));
-    });
-    return;
-  }
+  // Note: /api/purchases endpoints have been intentionally removed.
+  // The application now uses a "Single Source of Truth" architecture based entirely on the "items" table.
+  // Finance records are derived views of items. Do not re-introduce the purchases API.
 
-  // 6. Add Purchase
-  if (req.method === 'POST' && urlPath === '/api/purchases') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        const { image, name, brand, category, buy_date, source, price, url, status, remarks } = data;
-        
-        pool.query(
-          `INSERT INTO purchases (image, name, brand, category, buy_date, source, price, url, status, remarks)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-          [image, name, brand, category, buy_date, source, price, url, status, remarks],
-          (err, result) => {
-            if (err) { res.writeHead(500); res.end(err.message); return; }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, id: result.rows[0].id }));
-          }
-        );
-      } catch (e) {
-        res.writeHead(400); res.end('Invalid request');
-      }
-    });
-    return;
-  }
-
-  // 7. Update Purchase
-  if (req.method === 'PUT' && urlPath.startsWith('/api/purchases/')) {
-    const id = urlPath.split('/').pop();
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        const updates = [];
-        const values = [];
-        let paramIndex = 1;
-        
-        for (const [key, value] of Object.entries(data)) {
-          if (key !== 'id') {
-            updates.push(`${key} = $${paramIndex}`);
-            values.push(value);
-            paramIndex++;
-          }
-        }
-        
-        if (updates.length === 0) {
-          res.writeHead(400); res.end('No valid fields to update'); return;
-        }
-        
-        values.push(id);
-        
-        pool.query(
-          `UPDATE purchases SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-          values,
-          (err, result) => {
-            if (err) { res.writeHead(500); res.end(err.message); return; }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, changes: result.rowCount }));
-          }
-        );
-      } catch (e) {
-        res.writeHead(400); res.end('Invalid request');
-      }
-    });
-    return;
-  }
-
-  // 8. Delete Purchase
-  if (req.method === 'DELETE' && urlPath.startsWith('/api/purchases/')) {
-    const id = urlPath.split('/').pop();
-    pool.query('DELETE FROM purchases WHERE id = $1', [id], (err, result) => {
-      if (err) { res.writeHead(500); res.end(err.message); return; }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, changes: result.rowCount }));
-    });
-    return;
-  }
-
-  // 9. Recognize Image
+  // 5. Recognize Image
   if (req.method === 'POST' && urlPath === '/api/recognize-image') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -371,7 +284,10 @@ JSON 的格式如下：
             contents: [
                 prompt,
                 { inlineData: { data: base64Data, mimeType } }
-            ]
+            ],
+            config: {
+                responseMimeType: 'application/json'
+            }
         });
 
         const textResponse = response.text;

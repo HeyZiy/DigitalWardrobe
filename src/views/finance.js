@@ -1,7 +1,7 @@
 import { $, $$, escapeHtml, formatPrice, formatDate, getStoredYear, setStoredYear, getBudgets } from '../utils.js';
 import { DEFAULT_BUDGETS } from '../config.js';
 import { fetchData, normalize, renderCsvTable, setupTableEvents } from '../components/table.js';
-import { showPurchaseForm, hidePurchaseForm, showImageImportModal } from '../components/purchaseForm.js';
+// Removed purchaseForm.js import since items modal is used for manual add
 
 let currentTab = 'overview';
 
@@ -10,9 +10,7 @@ export async function renderFinanceView(contentEl, loadingEl, navigate) {
   currentTab = 'overview';
   
   try {
-    const rawData = await fetchData('/api/purchases');
-    const purch = normalize(rawData).normalized;
-    
+    const purch = await fetchFinanceData();
     renderFinanceLayout(contentEl, purch, navigate);
     setupFinanceEvents(contentEl, navigate);
   } catch (e) {
@@ -20,6 +18,28 @@ export async function renderFinanceView(contentEl, loadingEl, navigate) {
   } finally {
     loadingEl.hidden = true;
   }
+}
+
+async function fetchFinanceData() {
+  const rawData = await fetchData('/api/items');
+  const mappedPurchases = rawData
+    .filter(row => row.price > 0 || row.buy_date) 
+    .map(row => ({
+      id: row.id,
+      图片: row.image || '',
+      名称: row.name || '',
+      品牌: row.brand || '',
+      分类: row.category || '',
+      购买日期: row.buy_date || '',
+      购买途径: row.source || '',
+      价格: row.price || 0,
+      当前下落: (row.location === 'inventory' ? '正在使用' : row.location === 'storage' ? '已收纳' : row.location === 'discard' ? '已淘汰' : row.location || '未知'),
+      状态: row.status || '',
+      购买链接: row.url || '',
+      备注: row.season || ''
+    }));
+  mappedPurchases.sort((a, b) => new Date(b.购买日期 || 0).getTime() - new Date(a.购买日期 || 0).getTime());
+  return normalize(mappedPurchases).normalized;
 }
 
 function renderFinanceLayout(contentEl, purch, navigate) {
@@ -170,11 +190,8 @@ function renderHistoryTab(tabEl, purch, navigate) {
   tabEl.innerHTML = `
     <div class="dash-section">
       <div class="controls" style="margin-bottom:16px; display:flex; gap:12px">
-        <button class="action-btn" id="import-image-btn" style="background:var(--brand);color:white;border-color:var(--brand)">
-          📸 从图片导入
-        </button>
-        <button class="action-btn" id="add-purchase-btn">
-          📝 手动添加
+        <button class="action-btn" id="add-purchase-btn" style="background:var(--brand);color:white;border-color:var(--brand)">
+          📝 手动添加记录
         </button>
       </div>
       <div id="purchases-table-container"></div>
@@ -186,49 +203,37 @@ function renderHistoryTab(tabEl, purch, navigate) {
   
   const addBtn = $('#add-purchase-btn', tabEl);
   if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      showPurchaseForm(async (data) => {
-        await savePurchase(data);
-        // Refresh the view
-        const rawData = await fetchData('/api/purchases');
-        const newPurch = normalize(rawData).normalized;
-        renderTabContent($('#tab-content', tabEl.parentElement), newPurch, navigate);
-      });
-    });
-  }
-
-  const importBtn = $('#import-image-btn', tabEl);
-  if (importBtn) {
-    importBtn.addEventListener('click', () => {
-      showImageImportModal(async (data) => {
-        await savePurchase(data);
-        // Refresh the view
-        const rawData = await fetchData('/api/purchases');
-        const newPurch = normalize(rawData).normalized;
-        renderTabContent($('#tab-content', tabEl.parentElement), newPurch, navigate);
+    addBtn.addEventListener('click', async () => {
+      const { showModal } = await import('../components/modal.js');
+      const emptyData = {
+        name: '', category: '', brand: '', color: '', price: '',
+        buy_date: '', source: '', url: '', image: '',
+        season: '', status: '已入库', remarks: '',
+        location: 'inventory'
+      };
+      
+      showModal('通过财务单据添加物品', emptyData, async (newData) => {
+        try {
+          const res = await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+          });
+          if (!res.ok) throw new Error('保存失败');
+          
+          alert('入库成功！');
+          // Refresh the view
+          const newPurch = await fetchFinanceData();
+          renderTabContent($('#tab-content', tabEl.parentElement), newPurch, navigate);
+        } catch (e) {
+          alert('操作失败：' + e.message);
+        }
       });
     });
   }
 }
 
-async function savePurchase(data) {
-  try {
-    const response = await fetch('/api/purchases', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error('保存失败');
-    }
-    
-    alert('添加成功！');
-  } catch (e) {
-    alert('保存失败：' + e.message);
-    console.error(e);
-  }
-}
+// Removed savePurchase as we now POST directly to /api/items
 
 function calculateStatsForYear(purch, year) {
   let yearCost = 0;
@@ -350,8 +355,7 @@ function setupFinanceEvents(contentEl, navigate) {
       $$('.tab-btn', contentEl).forEach(b => b.classList.remove('active'));
       e.target.classList.add('active');
       
-      const rawData = await fetchData('/api/purchases');
-      const purch = normalize(rawData).normalized;
+      const purch = await fetchFinanceData();
       renderTabContent($('#tab-content', contentEl), purch, navigate);
       setupFinanceEvents(contentEl, navigate);
     });

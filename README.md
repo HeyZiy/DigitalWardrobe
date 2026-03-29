@@ -1,143 +1,57 @@
-# Digital Wardrobe (数字化衣橱)
+# Digital Wardrobe (电子衣橱) 🧥
 
-一个基于 Node.js 的个人衣橱管理系统，支持全流程的衣物生命周期管理（购买 -> 收货 -> 入柜 -> 换季收纳 -> 淘汰）。使用 PostgreSQL 数据库存储数据，支持商品信息自动提取和图像识别功能。
+**Digital Wardrobe** 是一个主打开放性与自动化录入的“次世代”个人实物与消费管理系统。  
+它能帮你高效将满屋子的实体衣服数据化，既是你的**穿搭灵感收集册 (Wardrobe)**，也是你的**时装记账流水单 (Finance Ledger)**。系统通过接入 Google Gemini 视觉大模型技术，首创了极速“看图记账”的神奇体验。
 
-## ✨ 主要功能
+## 🎯 核心特性 (Features)
 
-### 1. 📊 财务管理
-- **消费概览**：年度消费统计、月均支出、购买件数
-- **历史购买**：完整的购买记录列表，支持编辑和删除
+1. **🤖 One-Click AI Import (极速看图入库)** 
+   全局置顶“截图入库”入口，支持直接按下 `Ctrl+V`/拖拽商品页截图。无论是衣服款式、淘宝截图还是交易凭证，都能被 AI 瞬间精准萃取为【名称、价格、品牌、季节分类】，告别一切繁杂的手动表单，2秒无感静默入库！
+2. **🔄 Single Source of Truth架构 (单源真空数据)**
+   彻底打破传统软件中“记账”和“物品管理”分离的老派设计。本系统底层仅拥有一张唯一的数据基座 (`items` 表)。你在查账时能直接看到这件衣服在被你挂着还是吃灰，而在翻看衣柜时，亦能随时修正当初买贵的账目，一次修改，两端报表全服热更新！
+3. **📊 数据可视化的财务面板**
+   涵盖“年度/月度预算限制”、“12个月消费趋势热力轴”、“Top5 品牌与品类花销占比图”，让你对每一分花在衣服上的钱了如指掌。这并不是冷冰冰的记账表，这直接是基于你物理衣橱现状生成的开销分析大盘。
+4. **📦 收纳区 & 淘汰打入冷宫体验**
+   衣服不仅能记帐，还能一键从“正在使用”区挪入“已收纳”、“已淘汰”区。
 
-### 2. 🧥 衣柜管理
-- **物品管理**：添加、更新、删除衣柜物品
-- **状态跟踪**：记录物品状态（活跃、收纳、淘汰等）
-- **位置管理**：记录物品存放位置
-- **图片管理**：支持上传商品图片
+## 🛠 技术栈 (Stack)
 
-### 3. 🛒 购买记录管理
-- **手动添加**：填写表单添加购买记录
-- **图片上传**：支持上传商品图片
+本系统的开发贯彻了“奥卡姆剃刀”的极简主义，尽可能减少臃肿的前端框架负担，全靠原生的优雅调度驱动庞大复杂的业务：
+- **Frontend**: 完全原生的 `Vanilla JS (ES6 Modules)`, 标准的 `HTML5`, 强大的原生 `CSS Variables`，实现了轻量化毫秒级冷启动与前端路由。
+- **Backend**: `Node.js` 原生 HTTP Server（零 Express 环境依赖）。
+- **Data Engine**: `PostgreSQL`（配合 `pg` SDK）。
+- **AI Core**: `@google/genai` (搭载 Google Gemini 2.5 Flash 视觉引擎)。
 
-### 4. 🤖 智能功能
-- **商品信息自动提取**：从电商网站 URL 自动提取商品信息（标题、图片、价格）
-- **图像识别**：从商品图片中提取文字和产品信息
+## 🚀 部署与运行 (Quick Start)
 
-## 🚀 快速开始
+### 环境要求
+1. Node.js (v18+)
+2. PostgreSQL 数据库环境
+3. 获取一个 [Google AI Studio](https://aistudio.google.com/) 的 API Key。
 
-### 前置要求
-- 安装 [Node.js](https://nodejs.org/) (v14+ 推荐)
-- 安装并配置 [PostgreSQL](https://www.postgresql.org/) 数据库
+### 本地编译
 
-### 安装与运行
-
-1. **克隆项目**
-   ```bash
-   git clone https://github.com/yourusername/digital-wardrobe.git
-   cd digital-wardrobe
-   ```
-
-2. **安装依赖**
-   ```bash
-   npm install
-   ```
-
-3. **初始化数据库**
-   ```bash
-   npm run init-db
-   ```
-
-4. **启动服务**
-   ```bash
-   npm start
-   # 或
-   node server.js
-   ```
-
-5. **访问应用**
-   打开浏览器访问：[http://localhost:8080](http://localhost:8080)
-
-### 📱 局域网访问（手机端）
-确保手机和电脑在同一 WiFi 下，查找电脑的局域网 IP，手机浏览器访问：
-`http://<电脑IP>:8080`
-
-## 📂 文件结构
-
-```
-DigitalWardrobe/
-├── src/                    # 前端源码
-│   ├── app.js              # 应用入口
-│   ├── utils.js            # 工具函数
-│   ├── config.js           # 配置常量
-│   ├── styles.css          # 样式文件
-│   ├── views/              # 页面视图
-│   │   ├── finance.js      # 财务管理
-│   │   └── wardrobe.js     # 衣柜管理
-│   └── components/         # 组件
-│       ├── table.js        # 表格组件
-│       ├── modal.js        # 编辑弹窗
-│       └── purchaseForm.js # 购买记录表单
-├── index.html              # 入口文件
-├── server.js               # Node.js 后端服务
-├── db.js                   # 数据库配置
-├── init-db.js              # 数据库初始化脚本
-├── package.json            # 项目配置和依赖
-└── README.md               # 说明文档
+1. **安装依赖:**
+```bash
+npm install
 ```
 
-## 📝 数据说明
+2. **环境变量:**
+根目录建立 `.env` 文件，内容参考如下：
+```env
+DATABASE_URL=postgres://用户名:密码@localhost:5432/你的数据库
+GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxx
+```
 
-### 数据库表结构
-- **items**：存储衣柜物品信息
-- **purchases**：存储购买记录信息
+3. **初始化数据库表:**
+```bash
+node init-db.js
+```
 
-## 🛠 技术栈
+4. **启动服务:**
+```bash
+npm start
+# 服务默认运行于 http://localhost:8080/
+```
 
-- **前端**：原生 JavaScript (ES Modules)
-- **后端**：Node.js (原生 http 模块)
-- **样式**：CSS 变量 + Flexbox 布局
-- **数据**：PostgreSQL 数据库
-- **工具库**：
-  - Puppeteer：用于网页数据抓取
-  - Tesseract.js：用于图像识别
-  - Sharp：用于图像处理
-
-## 📡 API 端点
-
-### 衣柜物品
-- `GET /api/items` - 获取所有衣柜物品
-- `POST /api/items` - 添加新衣柜物品
-- `PUT /api/items/:id` - 更新现有衣柜物品
-- `DELETE /api/items/:id` - 删除衣柜物品
-
-### 购买记录
-- `GET /api/purchases` - 获取所有购买记录
-- `POST /api/purchases` - 添加新购买记录
-- `PUT /api/purchases/:id` - 更新购买记录
-- `DELETE /api/purchases/:id` - 删除购买记录
-
-### 工具功能
-- `POST /api/fetch-metadata` - 从 URL 获取商品元数据
-- `POST /api/recognize-image` - 从图片识别商品信息
-
-## 📝 常见问题
-
-**Q: 数据会丢失吗？**
-A: 所有操作都会存储到 PostgreSQL 数据库中。建议定期备份数据库。
-
-**Q: 如何添加购买记录？**
-A: 进入"财务管理" -> "历史购买"，点击"添加购买记录"按钮。
-
-**Q: 支持图片上传吗？**
-A: 支持。可以点击图片上传区域选择文件，或直接粘贴截图。
-
-**Q: 如何使用商品信息自动提取功能？**
-A: 在添加购买记录或衣柜物品时，输入商品 URL，系统会自动提取商品信息。
-
-**Q: 如何使用图像识别功能？**
-A: 在添加购买记录或衣柜物品时，上传商品图片，系统会尝试从图片中提取信息。
-
-**Q: 如何在外网访问？**
-A: 需要部署到云服务器，或使用内网穿透工具（如 ngrok、frp）。
-
-## 📄 许可证
-MIT License
+祝你管理出一派风格干练的人生数字衣橱！（遇到需要后续扩展/改版的问题，请随时参考本仓库附带的 `.agent-instructions.md` 开发者必读规范哦！）

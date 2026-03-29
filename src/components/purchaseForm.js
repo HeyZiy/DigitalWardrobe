@@ -347,7 +347,20 @@ function handleSave() {
     return;
   }
   
-  onSaveCallback(data);
+  const mappedData = {
+    name: data['名称'],
+    price: data['价格'],
+    brand: data['品牌'] || '',
+    category: data['分类'] || '',
+    source: data['购买途径'] || '',
+    buy_date: data['购买日期'] || '',
+    image: data['图片'] || '',
+    status: data['状态'] || '已入库',
+    url: data['购买链接'] || '',
+    remarks: data['季节'] || ''
+  };
+  
+  onSaveCallback(mappedData);
   hidePurchaseForm();
 }
 
@@ -442,16 +455,17 @@ export function showImageImportModal(onSave) {
           // Construct the record object silently
           const today = new Date().toISOString().split('T')[0];
           const record = {
-            '名称': data.name,
-            '价格': parseFloat(data.price) || 0,
-            '品牌': data.brand || '',
-            '分类': data.category || '',
-            '购买途径': data.source || '',
-            '季节': data.season || '',
-            '状态': '已入库',
-            '购买日期': today,
-            '图片': base64Img,
-            '购买链接': ''
+            name: data.name,
+            price: parseFloat(data.price) || 0,
+            brand: data.brand || '',
+            category: data.category || '',
+            source: data.source || '',
+            season: data.season || '',
+            status: '已入库',
+            buy_date: today,
+            image: base64Img,
+            url: '',
+            remarks: data.season || ''
           };
           
           if (onFastSaveCallback) {

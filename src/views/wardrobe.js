@@ -251,34 +251,7 @@ function setupWardrobeEvents(contentEl, navigate) {
             alert('添加失败，请重试');
             return;
           }
-
-          // 2. 同步创建财务购买记录（如果有价格信息）
-          if (newData.price && parseFloat(newData.price) > 0) {
-            try {
-              const purchaseData = {
-                name: newData.name,
-                brand: newData.brand || '',
-                category: newData.category,
-                buy_date: newData.buy_date || new Date().toISOString().split('T')[0],
-                source: newData.source || '',
-                price: newData.price,
-                url: newData.url || '',
-                status: newData.status || '已入库',
-                remarks: newData.remarks || '',
-                image: newData.image || ''
-              };
-
-              await fetch('/api/purchases', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(purchaseData)
-              });
-            } catch (e) {
-              console.error('同步财务记录失败:', e);
-              // 财务同步失败不影响主流程
-            }
-          }
-
+          // Removed synchronous creation in /api/purchases (Single Source of Truth)
           alert('添加成功！');
           refreshWardrobeData(contentEl, navigate);
         } catch(e) {

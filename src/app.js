@@ -45,6 +45,29 @@ function initNavigation() {
       });
     });
   }
+
+  const fastImportBtn = $('#global-fast-import-btn');
+  if (fastImportBtn) {
+    fastImportBtn.addEventListener('click', async () => {
+      const { showImageImportModal } = await import('./components/purchaseForm.js');
+      showImageImportModal(async (record) => {
+        try {
+          // 1. 同步写入衣柜 (Single Source of Truth)
+          await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({...record, location: 'inventory', add_date: record.buy_date})
+          });
+          
+          // Global event to force views to refresh
+          window.dispatchEvent(new Event('data-refreshed'));
+          navigate(currentView); // re-render the current view
+        } catch (e) {
+          alert('入库发生错误: ' + e.message);
+        }
+      });
+    });
+  }
 }
 
 window.setBudget = function() {
@@ -62,6 +85,10 @@ window.setBudget = function() {
 window.exportFinancialReport = function() {
   alert('导出功能开发中...');
 };
+
+window.addEventListener('data-refreshed', () => {
+  navigate(currentView);
+});
 
 initNavigation();
 navigate('wardrobe');
