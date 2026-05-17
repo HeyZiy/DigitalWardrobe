@@ -1,11 +1,50 @@
 import { $, $$, escapeHtml, getBudgets, setBudgets } from './utils.js';
-import { FILES, DEFAULT_BUDGETS } from './config.js';
+import { FILES, DEFAULT_BUDGETS, API_BASE_URL } from './config.js';
 import { renderFinanceView } from './views/finance.js';
 import { renderWardrobeView } from './views/wardrobe.js';
 import { renderDashboardView } from './views/dashboard.js';
 import { renderSettingsView } from './views/settings.js';
 import { showModal, hideModal } from './components/modal.js';
 import { auth } from './auth.js';
+import { createSyncManager, getSyncManager } from './sync.js';
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isTauri = window.__TAURI__ || window.tauri;
+
+const API_BASE = isTauri 
+  ? (import.meta.env.VITE_API_BASE_URL || API_BASE_URL) 
+  : (isMobile ? (window.MOBILE_API_URL || API_BASE_URL || '') : '');
+
+const syncManager = createSyncManager(API_BASE);
+
+const originalFetch = window.fetch;
+window.fetch = async function(url, options = {}) {
+  if (url.startsWith('/api/')) {
+    url = `${API_BASE}${url}`;
+  }
+  
+  const token = localStorage.getItem('wardrobe_token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'x-auth-token': token
+    };
+  }
+  
+  try {
+    const response = await originalFetch(url, options);
+    return response;
+  } catch (error) {
+    if (!navigator.onLine && url.includes('/api/items')) {
+      console.log('[App] 离线模式，使用缓存数据');
+      return {
+        ok: true,
+        json: async () => syncManager.getCachedItems()
+      };
+    }
+    throw error;
+  }
+};
 
 auth.init();
 

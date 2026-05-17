@@ -9,3 +9,16 @@ build/
 plan.md
 .trae/
 /skills/wardrobe-manager/
+exports/
+src-tauri/target/
+ios/
+android/
+*.ipa
+*.apk
+*.aab
+*.dmg
+*.exe
+*.msi
+*.AppImage
+*.deb
+*.rpm

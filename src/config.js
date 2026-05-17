@@ -5,6 +5,9 @@ export const FILES = {
   discard: 'data/discard.csv',
 };
 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (typeof window !== 'undefined' ? window.API_BASE_URL : null) || '';
+
 export const OPTIONS_SEASONS = ['春', '夏', '秋', '冬', '春秋', '秋冬', '四季通用'];
 
 // 品类列表 - 默认列表，实际使用时会从 localStorage 读取用户自定义列表
